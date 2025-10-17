@@ -23,7 +23,9 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "vercel-build": "react-scripts build"
+    "vercel-build": "react-scripts build",
+    "debug": "BROWSER=none react-scripts start",
+    "debug:chrome": "BROWSER=google-chrome react-scripts start"
   },
   "eslintConfig": {
     "extends": [
@@ -46,7 +48,8 @@
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17"
-  }
+  },
+  "proxy": "http://localhost:5001"
 }
 
 

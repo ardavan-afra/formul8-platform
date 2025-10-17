@@ -9,7 +9,10 @@
     "client": "cd client && npm start",
     "install-all": "npm install && cd server && npm install && cd ../client && npm install",
     "build": "cd client && npm run build",
-    "start": "cd server && npm start"
+    "start": "cd server && npm start",
+    "debug:server": "cd server && npm run debug:dev",
+    "debug:client": "cd client && npm run debug",
+    "debug:full": "concurrently \"npm run debug:server\" \"npm run debug:client\""
   },
   "keywords": ["research", "projects", "education", "platform"],
   "author": "",
