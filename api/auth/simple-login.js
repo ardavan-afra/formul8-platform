@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const { body, validationResult } = require('express-validator');
 const User = require('../../server/models/User');
 const { withDB } = require('../_lib/middleware');
 
@@ -18,6 +17,11 @@ const handler = async (req, res) => {
 
   try {
     const { email, password } = req.body;
+
+    // Basic validation
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     // Find user by email
     const user = await User.findOne({ email });
@@ -55,11 +59,4 @@ const handler = async (req, res) => {
   }
 };
 
-// Validation middleware
-const validation = [
-  body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
-  body('password').exists().withMessage('Password is required')
-];
-
-// Apply database connection and run handler
 module.exports = withDB(handler);

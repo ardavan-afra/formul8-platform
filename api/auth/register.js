@@ -17,12 +17,6 @@ const handler = async (req, res) => {
   }
 
   try {
-    // Validation
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
     const { name, email, password, role, department, bio, skills, interests, gpa, year } = req.body;
 
     // Check if user already exists
@@ -80,16 +74,5 @@ const validation = [
   body('department').trim().isLength({ min: 2 }).withMessage('Department is required')
 ];
 
-// Apply validation and database connection
-const validatedHandler = (req, res) => {
-  // Run validation
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  
-  // Apply database connection and run handler
-  return withDB(handler)(req, res);
-};
-
-module.exports = validatedHandler;
+// Apply database connection and run handler
+module.exports = withDB(handler);
