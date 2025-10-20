@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { projectFiltersSchema } from '@/lib/validations'
+import { requireRole } from '@/lib/auth'
+import { createProjectSchema, projectFiltersSchema } from '@/lib/validations'
+import { UserRole } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,7 +60,8 @@ export async function GET(request: NextRequest) {
               email: true,
               department: true
             }
-          }
+          },
+          requirements: true
         },
         orderBy: { createdAt: 'desc' },
         skip: (validatedFilters.page - 1) * validatedFilters.limit,
@@ -93,3 +96,93 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+export const POST = requireRole([UserRole.professor])(async (request, user) => {
+  try {
+    const body = await request.json()
+    const validatedData = createProjectSchema.parse(body)
+
+    const {
+      materials,
+      requirements,
+      applicationDeadline,
+      startDate,
+      endDate,
+      skills,
+      tags,
+      maxStudents,
+      ...projectFields
+    } = validatedData
+
+    const hasRequirements =
+      !!requirements &&
+      (typeof requirements.gpa === 'number' ||
+        (requirements.year && requirements.year.length > 0) ||
+        (requirements.prerequisites && requirements.prerequisites.length > 0))
+
+    const project = await prisma.project.create({
+      data: {
+        ...projectFields,
+        professorId: user.id,
+        skills: skills ?? [],
+        tags: tags ?? [],
+        maxStudents: maxStudents ?? 1,
+        applicationDeadline: applicationDeadline ? new Date(applicationDeadline) : undefined,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        materials: materials && materials.length > 0
+          ? {
+              create: materials.map(material => ({
+                name: material.name,
+                type: material.type,
+                url: material.url,
+                description: material.description
+              }))
+            }
+          : undefined,
+        requirements: hasRequirements
+          ? {
+              create: {
+                gpa: requirements?.gpa,
+                year: requirements?.year ?? [],
+                prerequisites: requirements?.prerequisites ?? []
+              }
+            }
+          : undefined
+      },
+      include: {
+        professor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true
+          }
+        },
+        materials: true,
+        requirements: true
+      }
+    })
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: { project }
+      },
+      { status: 201 }
+    )
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return NextResponse.json(
+        { error: 'Validation error', details: error.errors },
+        { status: 400 }
+      )
+    }
+
+    console.error('Create project error:', error)
+    return NextResponse.json(
+      { error: 'Server error' },
+      { status: 500 }
+    )
+  }
+})
